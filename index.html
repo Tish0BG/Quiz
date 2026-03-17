@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Литературно предизвикателство: Яворов</title>
+    <style>
+        :root {
+            --primary-color: #5d4037;
+            --accent-color: #d32f2f;
+            --bg-color: #f5f5dc;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        #game-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        h2 { color: var(--primary-color); }
+        .location { font-style: italic; color: #666; margin-bottom: 1rem; }
+        .riddle { font-size: 1.1rem; margin-bottom: 1.5rem; line-height: 1.5; }
+
+        input[type="text"] {
+            padding: 10px;
+            width: 80%;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        button {
+            padding: 10px 25px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+
+        button:hover { background-color: #3e2723; }
+
+        #overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .hidden { display: none !important; }
+
+        #final-sentence {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="overlay">
+        <div class="modal">
+            <h3>Внимание!</h3>
+            <p>Ако затворите или презаредите страницата, ще загубите своя прогрес.</p>
+            <button onclick="startGame()">Продължи</button>
+        </div>
+    </div>
+
+    <div id="game-container" class="hidden">
+        <div id="quiz-section">
+            <h2 id="station-title">Станция</h2>
+            <p id="location-text" class="location"></p>
+            <p id="riddle-text" class="riddle"></p>
+            <p><strong>Въпрос:</strong> <span id="question-text"></span></p>
+            
+            <input type="text" id="answer-input" placeholder="Напишете думата тук..." autocomplete="off">
+            <br>
+            <button onclick="checkAnswer()">Провери</button>
+            <p id="feedback" style="color: red; height: 20px;"></p>
+        </div>
+
+        <div id="final-section" class="hidden">
+            <h2>Поздравления!</h2>
+            <p>Ти разгада всички мистерии на Яворов.</p>
+            <div id="final-sentence"></div>
+        </div>
+    </div>
+
+    <script>
+        const tasks = [
+            {
+                title: "Станция 1: Началото",
+                location: "Кабинет по БЕЛ (стая 104)",
+                riddle: "В граматиката това е лично местоимение, 1 лице, единствено число. Всеки човек започва представянето си с него. Яворов започва своята изповед точно с тази дума, за да покаже своята силна личност.",
+                question: "Коя е думата, с която назоваваш себе си?",
+                answer: "АЗ"
+            },
+            {
+                title: "Станция 2: Отрицанието",
+                location: "Кабинет по Химия",
+                riddle: "В едно от най-тъжните си стихотворения Яворов пише: „Спри! Недей ми говори...“.",
+                question: "Коя е отрицателната частица в началото на изречението?",
+                answer: "НЕ"
+            },
+            {
+                title: "Станция 3: Движението",
+                location: "Физкултурен салон",
+                riddle: "Яворов е бил четник в Македония и е водил бурен, труден път. Той казва, че душата му е „вселена“.",
+                question: "Довърши мисълта: „Човек се ражда, за да...“ (синоним на съществувам в 1 л. ед. ч.)",
+                answer: "ЖИВЕЯ"
+            },
+            {
+                title: "Станция 4: Повторението",
+                location: "Музикален кът на втория етаж",
+                riddle: "Едно от най-известните стихотворения на Яворов, посветено на неговата майка, започва със заглавието: „__ на нивата“. В него той описва тежкия труд и съдбата на селяка.",
+                question: "Коя е първата дума от заглавието на това стихотворение?",
+                answer: "АЗ"
+            },
+            {
+                title: "Станция 5: Пламъкът (Финал)",
+                location: "На третия етаж",
+                riddle: "„Душата ми е пламък. Аз изгарям в своята поезия и страст.“",
+                question: "Какво прави огънят? (Глагол в 1 л. ед. ч.)",
+                answer: "ГОРЯ"
+            }
+        ];
+
+        let currentTask = 0;
+        let collectedWords = [];
+
+        function startGame() {
+            document.getElementById('overlay').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+            loadTask();
+        }
+
+        function loadTask() {
+            const task = tasks[currentTask];
+            document.getElementById('station-title').innerText = task.title;
+            document.getElementById('location-text').innerText = "Локация: " + task.location;
+            document.getElementById('riddle-text').innerText = task.riddle;
+            document.getElementById('question-text').innerText = task.question;
+            document.getElementById('answer-input').value = "";
+            document.getElementById('feedback').innerText = "";
+        }
+
+        function checkAnswer() {
+            const userInput = document.getElementById('answer-input').value.trim().toUpperCase();
+            const correctAnswer = tasks[currentTask].answer;
+
+            // Премахваме запетаи за по-лесна проверка, ако потребителят ги сложи
+            const cleanInput = userInput.replace(/,/g, "");
+
+            if (cleanInput === correctAnswer) {
+                collectedWords.push(tasks[currentTask].answer);
+                currentTask++;
+
+                if (currentTask < tasks.length) {
+                    loadTask();
+                } else {
+                    showFinal();
+                }
+            } else {
+                document.getElementById('feedback').innerText = "Грешен отговор! Опитай пак.";
+            }
+        }
+
+        function showFinal() {
+            document.getElementById('quiz-section').classList.add('hidden');
+            document.getElementById('final-section').classList.remove('hidden');
+            
+            // Оформяне на финалното изречение
+            let sentence = collectedWords.join(" ") + ".";
+            document.getElementById('final-sentence').innerText = sentence;
+        }
+
+        // Предотвратяване на случайно затваряне (допълнителна защита)
+        window.onbeforeunload = function() {
+            return "Прогресът ви ще бъде загубен!";
+        };
+    </script>
+</body>
+</html>
